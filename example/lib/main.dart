@@ -47,8 +47,8 @@ class _State extends State<_Body> {
               textAlign: TextAlign.center,
             ),
           ),
-          VerticalSlideContainer(
-            slideDirection: VerticalSlideContainerDirection.bidirectional,
+          SlideContainer(
+            slideDirection: SlideContainerDirection.vertical,
             onSlide: onSlide,
             maxSlideDistance: maxSlideDistance,
             child: Container(

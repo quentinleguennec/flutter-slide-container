@@ -1,6 +1,6 @@
 name: slide_container_example
 description: Demo of the Slide Container.
-version: 1.0.0
+version: 1.0.1
 author: Quentin Le Guennec <quentin@tengio.com>
 
 environment:

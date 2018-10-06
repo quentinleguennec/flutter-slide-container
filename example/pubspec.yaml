@@ -1,0 +1,13 @@
+name: slide_container_example
+description: Demo of the Slide Container.
+version: 1.0.0
+author: Quentin Le Guennec <quentin@tengio.com>
+
+environment:
+  sdk: ">=2.0.0-dev.68.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  slide_container:
+    path: ../

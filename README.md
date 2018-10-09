@@ -1,5 +1,11 @@
 # Slide Container
 
-A container that can be slid vertically with a smooth dampened motion.
+A container that can be slid vertically and horizontally with a smooth dampened motion.
 
-See `example` folder for a demo.
+Build the `example` folder with `flutter run` for a demo, or check the video in this blog post: 
+
+https://tengio.com/blog/flutter-slide-container/
+
+Install instructions and doc are available here:
+
+https://pub.dartlang.org/packages/slide_container

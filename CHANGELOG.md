@@ -1,3 +1,7 @@
+## 1.0.2 - 2018-10-09
+
+* Updated README.
+
 ## 1.0.1 - 2018-10-06
 
 * Added support for horizontal sliding.

@@ -1,13 +1,27 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
+import 'package:slide_container/extended_drag_gesture_recognizer.dart';
 
+/// Direction the container can be slid from its initial position.
 enum SlideContainerDirection {
   topToBottom,
   bottomToTop,
   vertical,
   leftToRight,
   rightToLeft,
-  horizontal
+  horizontal,
+}
+
+// Used by the Gesture Recognizers to know when the container can not be slid in this direction.
+// This prevents the Gesture Detector to intercept and consume gesture events even when the container can not slide in the drag direction.
+// This way, other gesture detectors can be used in conjunction with the SlideContainer.
+enum SlideContainerLock {
+  top,
+  bottom,
+  left,
+  right,
+  none,
 }
 
 /// Container that can be slid vertically or horizontally.
@@ -92,6 +106,9 @@ class SlideContainer extends StatefulWidget {
 }
 
 class _State extends State<SlideContainer> with TickerProviderStateMixin {
+  final Map<Type, GestureRecognizerFactory> gestures =
+      <Type, GestureRecognizerFactory>{};
+
   double dragValue = 0.0;
   double dragTarget = 0.0;
   bool isFirstDragFrame;
@@ -112,6 +129,70 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
   double get minDragDistanceToValidate =>
       widget.minSlideDistanceToValidate ?? maxDragDistance * 0.5;
 
+  double get containerOffset =>
+      animationController.value * maxDragDistance * dragTarget.sign;
+
+  SlideContainerLock get lock {
+    switch (widget.slideDirection) {
+      case SlideContainerDirection.topToBottom:
+        if (containerOffset == maxDragDistance) {
+          return SlideContainerLock.bottom;
+        } else if (containerOffset == 0.0) {
+          return SlideContainerLock.top;
+        } else {
+          return SlideContainerLock.none;
+        }
+        break;
+      case SlideContainerDirection.bottomToTop:
+        if (containerOffset == -maxDragDistance) {
+          return SlideContainerLock.top;
+        } else if (containerOffset == 0.0) {
+          return SlideContainerLock.bottom;
+        } else {
+          return SlideContainerLock.none;
+        }
+        break;
+      case SlideContainerDirection.vertical:
+        if (containerOffset == -maxDragDistance) {
+          return SlideContainerLock.top;
+        } else if (containerOffset == maxDragDistance) {
+          return SlideContainerLock.bottom;
+        } else {
+          return SlideContainerLock.none;
+        }
+        break;
+      case SlideContainerDirection.leftToRight:
+        if (containerOffset == maxDragDistance) {
+          return SlideContainerLock.right;
+        } else if (containerOffset == 0.0) {
+          return SlideContainerLock.left;
+        } else {
+          return SlideContainerLock.none;
+        }
+        break;
+      case SlideContainerDirection.rightToLeft:
+        if (containerOffset == -maxDragDistance) {
+          return SlideContainerLock.left;
+        } else if (containerOffset == 0.0) {
+          return SlideContainerLock.right;
+        } else {
+          return SlideContainerLock.none;
+        }
+        break;
+      case SlideContainerDirection.horizontal:
+        if (containerOffset == -maxDragDistance) {
+          return SlideContainerLock.left;
+        } else if (containerOffset == maxDragDistance) {
+          return SlideContainerLock.right;
+        } else {
+          return SlideContainerLock.none;
+        }
+        break;
+      default:
+        return SlideContainerLock.none;
+    }
+  }
+
   @override
   void initState() {
     animationController =
@@ -131,6 +212,9 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
       }
       animationController.value = dragTarget.abs() / maxDragDistance;
     });
+
+    registerGestureRecognizer();
+
     super.initState();
   }
 
@@ -139,6 +223,31 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
     animationController?.dispose();
     followFingerTicker?.dispose();
     super.dispose();
+  }
+
+  GestureRecognizerFactoryWithHandlers<T>
+      createGestureRecognizer<T extends DragGestureRecognizer>(
+              GestureRecognizerFactoryConstructor<T> constructor) =>
+          GestureRecognizerFactoryWithHandlers<T>(
+            constructor,
+            (T instance) {
+              instance
+                ..onStart = handlePanStart
+                ..onUpdate = handlePanUpdate
+                ..onEnd = handlePanEnd;
+            },
+          );
+
+  void registerGestureRecognizer() {
+    if (isVerticalSlide) {
+      gestures[LockableVerticalDragGestureRecognizer] =
+          createGestureRecognizer<LockableVerticalDragGestureRecognizer>(() =>
+              LockableVerticalDragGestureRecognizer(lockGetter: () => lock));
+    } else {
+      gestures[LockableHorizontalDragGestureRecognizer] =
+          createGestureRecognizer<LockableHorizontalDragGestureRecognizer>(() =>
+              LockableHorizontalDragGestureRecognizer(lockGetter: () => lock));
+    }
   }
 
   double getVelocity(DragEndDetails details) => isVerticalSlide
@@ -160,7 +269,6 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
     isFirstDragFrame = true;
     dragValue = animationController.value * maxDragDistance * dragTarget.sign;
     dragTarget = dragValue;
-    followFingerTicker.stop();
     followFingerTicker.start();
     if (widget.onSlideStarted != null) widget.onSlideStarted();
   }
@@ -198,18 +306,16 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-        onPanStart: handlePanStart,
-        onPanUpdate: handlePanUpdate,
-        onPanEnd: handlePanEnd,
+  Widget build(BuildContext context) => RawGestureDetector(
+        gestures: gestures,
         child: Transform.translate(
           offset: isVerticalSlide
               ? Offset(
                   0.0,
-                  animationController.value * maxDragDistance * dragTarget.sign,
+                  containerOffset,
                 )
               : Offset(
-                  animationController.value * maxDragDistance * dragTarget.sign,
+                  containerOffset,
                   0.0,
                 ),
           child: widget.child,

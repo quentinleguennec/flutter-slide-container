@@ -1,6 +1,6 @@
 name: slide_container
-description: A container that can be slid vertically with a smooth dampened motion.
-version: 1.0.2
+description: A container that can be slid vertically and horizontally with a smooth dampened motion.
+version: 1.0.3
 author: Quentin Le Guennec <quentin@tengio.com>
 homepage: https://github.com/quentinleguennec/flutter-slide-container
 

@@ -72,6 +72,20 @@ class SlideContainer extends StatefulWidget {
   /// Called when the slide gesture starts.
   final VoidCallback onSlideStarted;
 
+  /// Called once when the drag distance becomes superior to [minSlideDistanceToValidate] (ending the gesture here would complete the slide).
+  ///
+  /// Only triggers if the slide has not yet completed. If a slide complete because of a fast drag, the auto-slide animation will not trigger this callback.
+  ///
+  /// Useful to give users feedback (like haptics).
+  final VoidCallback onSlideValidated;
+
+  /// Called once after [onSlideValidated] if the drag distance becomes inferior to [minSlideDistanceToValidate] (ending the gesture here would cancel the slide).
+  ///
+  /// Only triggers if the slide has not yet been cancelled. If a slide is cancelled because of a fast drag, the auto-slide animation will not trigger this callback.
+  ///
+  /// Useful to give users feedback (like haptics).
+  final VoidCallback onSlideUnvalidated;
+
   /// Called when the slide gesture ends with a distance superior to [minSlideDistanceToValidate] or a velocity superior to [minDragVelocityForAutoSlide] (effectively triggering an auto-slide to [maxSlideDistance]).
   final VoidCallback onSlideCompleted;
 
@@ -92,6 +106,8 @@ class SlideContainer extends StatefulWidget {
     this.minSlideDistanceToValidate,
     this.maxSlideDistance,
     this.onSlideStarted,
+    this.onSlideValidated,
+    this.onSlideUnvalidated,
     this.onSlideCompleted,
     this.onSlideCanceled,
     this.onSlide,
@@ -111,7 +127,8 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
 
   double dragValue = 0.0;
   double dragTarget = 0.0;
-  bool isFirstDragFrame;
+  bool isFirstDragFrame = true;
+  bool didValidate = false;
   AnimationController animationController;
   Ticker followFingerTicker;
 
@@ -210,6 +227,19 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
         // This dampen the drag movement (acts like a spring, the farther from the finger position the faster it moves toward it).
         dragTarget += (dragValue - dragTarget) / widget.dampeningStrength;
       }
+
+      if (dragTarget.abs() > minDragDistanceToValidate) {
+        if (!didValidate) {
+          didValidate = true;
+          if (widget.onSlideValidated != null) widget.onSlideValidated();
+        }
+      } else {
+        if (didValidate) {
+          didValidate = false;
+          if (widget.onSlideUnvalidated != null) widget.onSlideUnvalidated();
+        }
+      }
+
       animationController.value = dragTarget.abs() / maxDragDistance;
     });
 
@@ -269,6 +299,7 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
     isFirstDragFrame = true;
     dragValue = animationController.value * maxDragDistance * dragTarget.sign;
     dragTarget = dragValue;
+    didValidate = dragTarget != 0;
     followFingerTicker.start();
     if (widget.onSlideStarted != null) widget.onSlideStarted();
   }

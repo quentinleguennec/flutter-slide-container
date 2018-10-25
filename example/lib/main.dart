@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:slide_container/slide_container.dart';
 
 void main() => runApp(App());
@@ -52,11 +53,13 @@ class _State extends State<_Body> {
           /// SlideContainer can not slide more in the direction of the drag.
           GestureDetector(
             onVerticalDragStart: (_) => print(
-                "Container cannot be slid further in that direction, this GestureDetector can take control and hadle the gesture."),
+                "Container cannot be slid further in that direction, this GestureDetector can take control and handle the gesture."),
             child: SlideContainer(
               slideDirection: SlideContainerDirection.vertical,
               onSlide: onSlide,
               maxSlideDistance: maxSlideDistance,
+              onSlideValidated: () => HapticFeedback.mediumImpact(),
+              onSlideUnvalidated: () => HapticFeedback.mediumImpact(),
               child: Container(
                 width: MediaQuery.of(context).size.width,
                 height: MediaQuery.of(context).size.height,

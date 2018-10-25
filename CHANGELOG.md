@@ -1,3 +1,11 @@
+## 1.0.5 - 2018-10-25
+
+* Fixed Flutter analysis warnings. 
+
+## 1.0.4 - 2018-10-25
+
+* Added onSlideValidated and onSlideUnvalidated callbacks.
+
 ## 1.0.3 - 2018-10-10
 
 * Improved logic to reduce nested GestureDetector conflicts. Now if the container as been slid to

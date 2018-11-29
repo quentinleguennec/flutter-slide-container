@@ -1,3 +1,12 @@
+## 1.0.7 - 2018-11-29
+
+* Added the SlideContainerController to allow a manual force slide in a given direction.
+* Updated example app to showcase the new SlideContainerController.
+
+## 1.0.6 - 2018-10-25
+
+* Fixed Flutter analysis warnings.
+
 ## 1.0.5 - 2018-10-25
 
 * Fixed Flutter analysis warnings. 

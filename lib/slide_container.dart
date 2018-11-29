@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:slide_container/extended_drag_gesture_recognizer.dart';
+import 'package:slide_container/slide_container_controller.dart';
 
 /// Direction the container can be slid from its initial position.
 enum SlideContainerDirection {
@@ -86,16 +87,19 @@ class SlideContainer extends StatefulWidget {
   /// Useful to give users feedback (like haptics).
   final VoidCallback onSlideUnvalidated;
 
-  /// Called when the slide gesture ends with a distance superior to [minSlideDistanceToValidate] or a velocity superior to [minDragVelocityForAutoSlide] (effectively triggering an auto-slide to [maxSlideDistance]).
+  /// Called when the slide gesture ends with a distance superior to [minSlideDistanceToValidate] or a velocity superior to [minDragVelocityForAutoSlide] or when a slide is forced from the [controller] (effectively triggering an auto-slide to [maxSlideDistance]) .
   final VoidCallback onSlideCompleted;
 
-  /// Called when the slide gesture ends with a value inferior or equal to [minSlideDistanceToValidate] and a velocity inferior or equal to [minDragVelocityForAutoSlide]  (effectively triggering an auto-slide to the starting position).
+  /// Called when the slide gesture ends with a value inferior or equal to [minSlideDistanceToValidate] and a velocity inferior or equal to [minDragVelocityForAutoSlide] or when a slide is forced from the [controller] (effectively triggering an auto-slide to the starting position).
   final VoidCallback onSlideCanceled;
 
   /// Called each frame when the slide gesture is active (i.e. after [onSlideStarted] and before [onSlideCompleted] or [onSlideCanceled]) and during the auto-slide.
   ///
   /// returns the normalized position of the slide container as a value between 0.0 and 1.0 where 0.0 means the container is at the starting position and 1.0 means the container is at [maxSlideDistance].
   final ValueChanged<double> onSlide;
+
+  /// Register this controller to be able to manually force a slide in a given direction.
+  final SlideContainerController controller;
 
   SlideContainer({
     @required this.child,
@@ -111,6 +115,7 @@ class SlideContainer extends StatefulWidget {
     this.onSlideCompleted,
     this.onSlideCanceled,
     this.onSlide,
+    this.controller,
   })  : assert(child != null),
         assert(minDragVelocityForAutoSlide != null),
         assert(autoSlideDuration != null),
@@ -129,13 +134,18 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
   double dragTarget = 0.0;
   bool isFirstDragFrame = true;
   bool didValidate = false;
+  bool didForceSlide = false;
   AnimationController animationController;
   Ticker followFingerTicker;
 
+  SlideContainerController get controller => widget.controller;
+
+  SlideContainerDirection get slideDirection => widget.slideDirection;
+
   bool get isVerticalSlide =>
-      widget.slideDirection == SlideContainerDirection.topToBottom ||
-      widget.slideDirection == SlideContainerDirection.bottomToTop ||
-      widget.slideDirection == SlideContainerDirection.vertical;
+      slideDirection == SlideContainerDirection.topToBottom ||
+      slideDirection == SlideContainerDirection.bottomToTop ||
+      slideDirection == SlideContainerDirection.vertical;
 
   double get maxDragDistance =>
       widget.maxSlideDistance ??
@@ -150,7 +160,7 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
       animationController.value * maxDragDistance * dragTarget.sign;
 
   SlideContainerLock get lock {
-    switch (widget.slideDirection) {
+    switch (slideDirection) {
       case SlideContainerDirection.topToBottom:
         if (containerOffset == maxDragDistance) {
           return SlideContainerLock.bottom;
@@ -212,12 +222,14 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
 
   @override
   void initState() {
+    controller?.addListener(onControllerUpdated);
+
     animationController =
         AnimationController(vsync: this, duration: widget.autoSlideDuration)
           ..addListener(() {
             if (widget.onSlide != null)
               widget.onSlide(animationController.value);
-            setState(() {});
+            if (mounted) setState(() {});
           });
 
     followFingerTicker = createTicker((_) {
@@ -252,7 +264,69 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
   void dispose() {
     animationController?.dispose();
     followFingerTicker?.dispose();
+    controller?.removeListener(onControllerUpdated);
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    oldWidget.controller?.removeListener(onControllerUpdated);
+    widget.controller?.addListener(onControllerUpdated);
+  }
+
+  void onControllerUpdated() {
+    final SlideContainerDirection forcedSlideDirection =
+        controller.forcedSlideDirection;
+
+    assert(
+        ((forcedSlideDirection == SlideContainerDirection.topToBottom ||
+                        forcedSlideDirection ==
+                            SlideContainerDirection.bottomToTop) &&
+                    (slideDirection == SlideContainerDirection.topToBottom ||
+                        slideDirection ==
+                            SlideContainerDirection.bottomToTop) ||
+                slideDirection == SlideContainerDirection.vertical) ||
+            ((forcedSlideDirection == SlideContainerDirection.leftToRight ||
+                    forcedSlideDirection ==
+                        SlideContainerDirection.rightToLeft) &&
+                (slideDirection == SlideContainerDirection.leftToRight ||
+                    slideDirection == SlideContainerDirection.rightToLeft ||
+                    slideDirection == SlideContainerDirection.horizontal)),
+        "Invalid force slide direction = $forcedSlideDirection for container of directionality = $slideDirection.");
+
+    didForceSlide = true;
+    if (followFingerTicker.isActive) {
+      followFingerTicker.stop();
+    }
+
+    if (containerOffset == 0.0) {
+      if (forcedSlideDirection == SlideContainerDirection.topToBottom ||
+          forcedSlideDirection == SlideContainerDirection.leftToRight) {
+        dragTarget = 0.001;
+      } else {
+        dragTarget = -0.001;
+      }
+    }
+
+    switch (slideDirection) {
+      case SlideContainerDirection.topToBottom:
+      case SlideContainerDirection.leftToRight:
+      case SlideContainerDirection.bottomToTop:
+      case SlideContainerDirection.rightToLeft:
+        forcedSlideDirection == slideDirection
+            ? completeSlide()
+            : cancelSlide();
+        break;
+      case SlideContainerDirection.horizontal:
+      case SlideContainerDirection.vertical:
+        if (forcedSlideDirection == SlideContainerDirection.topToBottom ||
+            forcedSlideDirection == SlideContainerDirection.leftToRight) {
+          containerOffset >= 0 ? completeSlide() : cancelSlide();
+        } else {
+          containerOffset <= 0 ? completeSlide() : cancelSlide();
+        }
+    }
   }
 
   GestureRecognizerFactoryWithHandlers<T>
@@ -296,6 +370,8 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
       });
 
   void handlePanStart(DragStartDetails details) {
+    didForceSlide = false;
+    animationController.stop();
     isFirstDragFrame = true;
     dragValue = animationController.value * maxDragDistance * dragTarget.sign;
     dragTarget = dragValue;
@@ -305,6 +381,9 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
   }
 
   void handlePanUpdate(DragUpdateDetails details) {
+    if (didForceSlide) {
+      return;
+    }
     if (isFirstDragFrame) {
       isFirstDragFrame = false;
       return;
@@ -312,16 +391,20 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
 
     dragValue = (dragValue + getDelta(details))
         .clamp(-maxDragDistance, maxDragDistance);
-    if (widget.slideDirection == SlideContainerDirection.topToBottom ||
-        widget.slideDirection == SlideContainerDirection.leftToRight) {
+    if (slideDirection == SlideContainerDirection.topToBottom ||
+        slideDirection == SlideContainerDirection.leftToRight) {
       dragValue = dragValue.clamp(0.0, maxDragDistance);
-    } else if (widget.slideDirection == SlideContainerDirection.bottomToTop ||
-        widget.slideDirection == SlideContainerDirection.rightToLeft) {
+    } else if (slideDirection == SlideContainerDirection.bottomToTop ||
+        slideDirection == SlideContainerDirection.rightToLeft) {
       dragValue = dragValue.clamp(-maxDragDistance, 0.0);
     }
   }
 
   void handlePanEnd(DragEndDetails details) {
+    if (didForceSlide) {
+      return;
+    }
+
     if (getVelocity(details) * dragTarget.sign >
         widget.minDragVelocityForAutoSlide) {
       completeSlide();

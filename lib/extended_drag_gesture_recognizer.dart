@@ -42,7 +42,7 @@ class LockableVerticalDragGestureRecognizer
   }
 
   @override
-  Offset _getDeltaForDetails(Offset delta) => new Offset(0.0, delta.dy);
+  Offset _getDeltaForDetails(Offset delta) => Offset(0.0, delta.dy);
 
   @override
   double _getPrimaryValueFromOffset(Offset value) => value.dy;
@@ -92,7 +92,7 @@ class LockableHorizontalDragGestureRecognizer
   }
 
   @override
-  Offset _getDeltaForDetails(Offset delta) => new Offset(delta.dx, 0.0);
+  Offset _getDeltaForDetails(Offset delta) => Offset(delta.dx, 0.0);
 
   @override
   double _getPrimaryValueFromOffset(Offset value) => value.dx;
@@ -138,17 +138,15 @@ abstract class ExtendedDragGestureRecognizer extends DragGestureRecognizer {
   @override
   void addPointer(PointerEvent event) {
     startTrackingPointer(event.pointer);
-    _velocityTrackers[event.pointer] = new VelocityTracker();
+    _velocityTrackers[event.pointer] = VelocityTracker();
     if (_state == _DragState.ready) {
       _state = _DragState.possible;
       _initialPosition = event.position;
       _pendingDragOffset = Offset.zero;
       _lastPendingEventTimestamp = event.timeStamp;
       if (onDown != null)
-        invokeCallback<void>(
-            'onDown',
-            () =>
-                onDown(new DragDownDetails(globalPosition: _initialPosition)));
+        invokeCallback<void>('onDown',
+            () => onDown(DragDownDetails(globalPosition: _initialPosition)));
     } else if (_state == _DragState.accepted) {
       resolve(GestureDisposition.accepted);
     }
@@ -170,7 +168,7 @@ abstract class ExtendedDragGestureRecognizer extends DragGestureRecognizer {
         if (onUpdate != null) {
           invokeCallback<void>(
               'onUpdate',
-              () => onUpdate(new DragUpdateDetails(
+              () => onUpdate(DragUpdateDetails(
                     sourceTimeStamp: event.timeStamp,
                     delta: _getDeltaForDetails(delta),
                     primaryDelta: _getPrimaryValueFromOffset(delta),
@@ -198,7 +196,7 @@ abstract class ExtendedDragGestureRecognizer extends DragGestureRecognizer {
       if (onStart != null) {
         invokeCallback<void>(
             'onStart',
-            () => onStart(new DragStartDetails(
+            () => onStart(DragStartDetails(
                   sourceTimeStamp: timestamp,
                   globalPosition: _initialPosition,
                 )));
@@ -207,7 +205,7 @@ abstract class ExtendedDragGestureRecognizer extends DragGestureRecognizer {
         final Offset deltaForDetails = _getDeltaForDetails(delta);
         invokeCallback<void>(
             'onUpdate',
-            () => onUpdate(new DragUpdateDetails(
+            () => onUpdate(DragUpdateDetails(
                   sourceTimeStamp: timestamp,
                   delta: deltaForDetails,
                   primaryDelta: _getPrimaryValueFromOffset(delta),
@@ -239,12 +237,12 @@ abstract class ExtendedDragGestureRecognizer extends DragGestureRecognizer {
       final VelocityEstimate estimate = tracker.getVelocityEstimate();
       if (estimate != null && _isFlingGesture(estimate)) {
         final Velocity velocity =
-            new Velocity(pixelsPerSecond: estimate.pixelsPerSecond)
-                .clampMagnitude(minFlingVelocity ?? kMinFlingVelocity,
-                    maxFlingVelocity ?? kMaxFlingVelocity);
+            Velocity(pixelsPerSecond: estimate.pixelsPerSecond).clampMagnitude(
+                minFlingVelocity ?? kMinFlingVelocity,
+                maxFlingVelocity ?? kMaxFlingVelocity);
         invokeCallback<void>(
             'onEnd',
-            () => onEnd(new DragEndDetails(
+            () => onEnd(DragEndDetails(
                   velocity: velocity,
                   primaryVelocity:
                       _getPrimaryValueFromOffset(velocity.pixelsPerSecond),
@@ -254,7 +252,7 @@ abstract class ExtendedDragGestureRecognizer extends DragGestureRecognizer {
       } else {
         invokeCallback<void>(
             'onEnd',
-            () => onEnd(new DragEndDetails(
+            () => onEnd(DragEndDetails(
                   velocity: Velocity.zero,
                   primaryVelocity: 0.0,
                 )), debugReport: () {

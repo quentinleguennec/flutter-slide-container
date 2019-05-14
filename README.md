@@ -1,3 +1,11 @@
+<a href="https://github.com/Solido/awesome-flutter">
+   <img alt="Awesome Flutter" src="https://img.shields.io/badge/Awesome-Flutter-blue.svg?longCache=true&style=flat-square" />
+</a>
+
+<a href="https://pub.dev/packages/slide_container">
+   <img alt="Dart Pub" src="https://img.shields.io/pub/v/slide_container.svg?color=orange&style=flat-square" />
+</a>
+
 # Slide Container
 
 A container that can be slid vertically and horizontally with a smooth dampened motion.

@@ -2,7 +2,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:slide_container/extended_drag_gesture_recognizer.dart';
-import 'package:slide_container/slide_container_controller.dart';
 
 /// Direction the container can be slid from its initial position.
 enum SlideContainerDirection {
@@ -137,6 +136,7 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
   bool didForceSlide = false;
   AnimationController animationController;
   Ticker followFingerTicker;
+  bool isEnabled = true;
 
   SlideContainerController get controller => widget.controller;
 
@@ -276,24 +276,31 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
   }
 
   void onControllerUpdated() {
-    final SlideContainerDirection forcedSlideDirection =
-        controller.forcedSlideDirection;
+    if(controller._forcedSlideDirection != null) {
+      forceSlide(controller._forcedSlideDirection);
+    }
+    if(controller._shouldEnable!= null) {
+      isEnabled = controller._shouldEnable;
+      cancelSlide();
+    }
+  }
 
+  void forceSlide(final SlideContainerDirection forcedSlideDirection) {
     assert(
-        ((forcedSlideDirection == SlideContainerDirection.topToBottom ||
-                        forcedSlideDirection ==
-                            SlideContainerDirection.bottomToTop) &&
-                    (slideDirection == SlideContainerDirection.topToBottom ||
-                        slideDirection ==
-                            SlideContainerDirection.bottomToTop) ||
-                slideDirection == SlideContainerDirection.vertical) ||
-            ((forcedSlideDirection == SlideContainerDirection.leftToRight ||
-                    forcedSlideDirection ==
-                        SlideContainerDirection.rightToLeft) &&
-                (slideDirection == SlideContainerDirection.leftToRight ||
-                    slideDirection == SlideContainerDirection.rightToLeft ||
-                    slideDirection == SlideContainerDirection.horizontal)),
-        "Invalid force slide direction = $forcedSlideDirection for container of directionality = $slideDirection.");
+    ((forcedSlideDirection == SlideContainerDirection.topToBottom ||
+        forcedSlideDirection ==
+            SlideContainerDirection.bottomToTop) &&
+        (slideDirection == SlideContainerDirection.topToBottom ||
+            slideDirection ==
+                SlideContainerDirection.bottomToTop) ||
+        slideDirection == SlideContainerDirection.vertical) ||
+        ((forcedSlideDirection == SlideContainerDirection.leftToRight ||
+            forcedSlideDirection ==
+                SlideContainerDirection.rightToLeft) &&
+            (slideDirection == SlideContainerDirection.leftToRight ||
+                slideDirection == SlideContainerDirection.rightToLeft ||
+                slideDirection == SlideContainerDirection.horizontal)),
+    "Invalid force slide direction = $forcedSlideDirection for container of directionality = $slideDirection.");
 
     didForceSlide = true;
     if (followFingerTicker.isActive) {
@@ -370,6 +377,7 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
       });
 
   void handlePanStart(DragStartDetails details) {
+    if(!isEnabled) return;
     didForceSlide = false;
     animationController.stop();
     isFirstDragFrame = true;
@@ -381,7 +389,7 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
   }
 
   void handlePanUpdate(DragUpdateDetails details) {
-    if (didForceSlide) {
+    if (didForceSlide || !isEnabled) {
       return;
     }
     if (isFirstDragFrame) {
@@ -401,7 +409,7 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
   }
 
   void handlePanEnd(DragEndDetails details) {
-    if (didForceSlide) {
+    if (didForceSlide || !isEnabled) {
       return;
     }
 
@@ -435,4 +443,35 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
           child: widget.child,
         ),
       );
+}
+
+/// A controller for the [SlideContainer].
+///
+/// Allows you to force a slide in a given direction or enable/disable the slide gesture detection.
+/// TODO: it (will/will not) disable forced slide?
+///
+/// Will only work after the controller has been attached to a SlideController from a build function.
+class SlideContainerController extends ChangeNotifier {
+  SlideContainerDirection _forcedSlideDirection;
+  bool _shouldEnable;
+
+  void forceSlide(SlideContainerDirection slideDirection) {
+    _forcedSlideDirection = slideDirection;
+    notifyListeners();
+    _forcedSlideDirection = null;
+  }
+
+  void disable() {
+    if(_shouldEnable == false) return;
+    _shouldEnable = false;
+    notifyListeners();
+    _shouldEnable = null;
+  }
+
+  void enable() {
+    if(_shouldEnable == true) return;
+    _shouldEnable = true;
+    notifyListeners();
+    _shouldEnable = null;
+  }
 }

@@ -20,7 +20,7 @@ class LockableVerticalDragGestureRecognizer
   SlideContainerLock get lock => lockGetter();
 
   @override
-  bool _isFlingGesture(VelocityEstimate estimate) {
+  bool isFlingGesture(VelocityEstimate estimate) {
     final double minVelocity = minFlingVelocity ?? kMinFlingVelocity;
     final double minDistance = minFlingDistance ?? kTouchSlop;
     if ((lock == SlideContainerLock.top && estimate.pixelsPerSecond.dy < 0.0) ||

@@ -69,7 +69,7 @@ class LockableHorizontalDragGestureRecognizer
   SlideContainerLock get lock => lockGetter();
 
   @override
-  bool _isFlingGesture(VelocityEstimate estimate) {
+  bool isFlingGesture(VelocityEstimate estimate) {
     final double minVelocity = minFlingVelocity ?? kMinFlingVelocity;
     final double minDistance = minFlingDistance ?? kTouchSlop;
     if ((lock == SlideContainerLock.left &&
@@ -125,7 +125,7 @@ abstract class ExtendedDragGestureRecognizer extends DragGestureRecognizer {
   Offset _pendingDragOffset;
   Duration _lastPendingEventTimestamp;
 
-  bool _isFlingGesture(VelocityEstimate estimate);
+  bool isFlingGesture(VelocityEstimate estimate);
 
   Offset _getDeltaForDetails(Offset delta);
 
@@ -235,7 +235,7 @@ abstract class ExtendedDragGestureRecognizer extends DragGestureRecognizer {
       assert(tracker != null);
 
       final VelocityEstimate estimate = tracker.getVelocityEstimate();
-      if (estimate != null && _isFlingGesture(estimate)) {
+      if (estimate != null && isFlingGesture(estimate)) {
         final Velocity velocity =
             Velocity(pixelsPerSecond: estimate.pixelsPerSecond).clampMagnitude(
                 minFlingVelocity ?? kMinFlingVelocity,

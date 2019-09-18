@@ -42,3 +42,6 @@ android/Gemfile
 ios/Gemfile
 ios/Runner.app.dSYM.zip
 ios/Runner.ipa
+
+# Flutter auto generated:
+example/ios/Flutter/flutter_export_environment.sh

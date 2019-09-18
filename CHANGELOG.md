@@ -1,3 +1,7 @@
+## 1.1.0 - 2019-09-18
+
+* **Breaking change** Fixed naming issue with new Flutter version (1.9.0 and above). Use this version of the plugin when you upgrade Flutter.
+
 ## 1.0.7 - 2018-11-29
 
 * Added the SlideContainerController to allow a manual force slide in a given direction.

@@ -1,4 +1,5 @@
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:slide_container/extended_drag_gesture_recognizer.dart';
@@ -38,11 +39,9 @@ class SlideContainer extends StatefulWidget {
 
   /// When the gesture ends the animation play at this speed to move back to the start position or to [maxSlideDistance] (see [minSlideDistanceToValidate]).
   /// This takes into account the position of the container just before the gesture ends.
-  ///
-  /// Default to Duration(milliseconds: 300)
   final Duration autoSlideDuration;
 
-  /// If not null the container will not slide beyond this value.
+  /// The container will not slide beyond this value.
   ///
   /// Default to [MediaQueryData.size].height if the [slideDirection] is vertical and [MediaQueryData.size].width if the [slideDirection] is horizontal.
   ///
@@ -51,13 +50,16 @@ class SlideContainer extends StatefulWidget {
 
   /// If the drag gesture is faster than this it will complete the slide
   ///
+  /// If set to [double.infinity] the container will not auto-slide.
+  ///
   /// In px/s.
   final double minDragVelocityForAutoSlide;
 
   /// If the drag gesture is slower than [minDragVelocityForAutoSlide] and the slide distance is less than this value then the drag is not validated and the container go back to the starting position.
   /// Else the drag is validated and the container moves to [maxSlideDistance].
   ///
-  /// Default to half of [maxSlideDistance]
+  /// If set to [double.infinity] the container will not auto-slide.
+  /// Default to half of [maxSlideDistance].
   ///
   /// In px.
   final double minSlideDistanceToValidate;
@@ -75,22 +77,30 @@ class SlideContainer extends StatefulWidget {
 
   /// Called once when the drag distance becomes superior to [minSlideDistanceToValidate] (ending the gesture here would complete the slide).
   ///
-  /// Only triggers if the slide has not yet completed. If a slide complete because of a fast drag, the auto-slide animation will not trigger this callback.
+  /// Only triggers if [minSlideDistanceToValidate] is not equal to [double.infinity] and if the slide has not yet completed.
+  /// If a slide is completed because of a fast drag, the auto-slide animation will not trigger this callback.
   ///
   /// Useful to give users feedback (like haptics).
   final VoidCallback onSlideValidated;
 
   /// Called once after [onSlideValidated] if the drag distance becomes inferior to [minSlideDistanceToValidate] (ending the gesture here would cancel the slide).
   ///
-  /// Only triggers if the slide has not yet been cancelled. If a slide is cancelled because of a fast drag, the auto-slide animation will not trigger this callback.
+  /// Only triggers if [minSlideDistanceToValidate] is not equal to [double.infinity] and if the slide has not yet been cancelled.
+  /// If a slide is cancelled because of a fast drag, the auto-slide animation will not trigger this callback.
   ///
   /// Useful to give users feedback (like haptics).
   final VoidCallback onSlideUnvalidated;
 
-  /// Called when the slide gesture ends with a distance superior to [minSlideDistanceToValidate] or a velocity superior to [minDragVelocityForAutoSlide] or when a slide is forced from the [controller] (effectively triggering an auto-slide to [maxSlideDistance]) .
+  /// Called when:
+  /// - The slide gesture ends with a distance superior to [minSlideDistanceToValidate].
+  /// - The slide gesture ends with a velocity superior to [minDragVelocityForAutoSlide].
+  /// - A slide is forced from the [controller] (effectively triggering an auto-slide to [maxSlideDistance]).
   final VoidCallback onSlideCompleted;
 
-  /// Called when the slide gesture ends with a value inferior or equal to [minSlideDistanceToValidate] and a velocity inferior or equal to [minDragVelocityForAutoSlide] or when a slide is forced from the [controller] (effectively triggering an auto-slide to the starting position).
+  /// Called when:
+  /// - The slide gesture ends with a value inferior or equal to [minSlideDistanceToValidate] and [minSlideDistanceToValidate] is not equal to [double.infinity].
+  /// - The slide gesture ends with a velocity inferior or equal to [minDragVelocityForAutoSlide] and [minDragVelocityForAutoSlide] is not equal to [double.infinity].
+  /// - A slide is forced from the [controller] (effectively triggering an auto-slide to the starting position).
   final VoidCallback onSlideCanceled;
 
   /// Called each frame when the slide gesture is active (i.e. after [onSlideStarted] and before [onSlideCompleted] or [onSlideCanceled]) and during the auto-slide.
@@ -117,7 +127,6 @@ class SlideContainer extends StatefulWidget {
     this.onSlide,
     this.controller,
   })  : assert(child != null),
-        assert(minDragVelocityForAutoSlide != null),
         assert(autoSlideDuration != null),
         assert(dampeningStrength != null && dampeningStrength >= 1.0),
         assert(slideDirection != null);
@@ -240,15 +249,17 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
         dragTarget += (dragValue - dragTarget) / widget.dampeningStrength;
       }
 
-      if (dragTarget.abs() > minDragDistanceToValidate) {
-        if (!didValidate) {
-          didValidate = true;
-          if (widget.onSlideValidated != null) widget.onSlideValidated();
-        }
-      } else {
-        if (didValidate) {
-          didValidate = false;
-          if (widget.onSlideUnvalidated != null) widget.onSlideUnvalidated();
+      if (minDragDistanceToValidate != double.infinity) {
+        if (dragTarget.abs() > minDragDistanceToValidate) {
+          if (!didValidate) {
+            didValidate = true;
+            if (widget.onSlideValidated != null) widget.onSlideValidated();
+          }
+        } else {
+          if (didValidate) {
+            didValidate = false;
+            if (widget.onSlideUnvalidated != null) widget.onSlideUnvalidated();
+          }
         }
       }
 
@@ -411,7 +422,7 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
     } else if (getVelocity(details) * dragTarget.sign <
         -widget.minDragVelocityForAutoSlide) {
       cancelSlide();
-    } else {
+    } else if (minDragDistanceToValidate != double.infinity) {
       dragTarget.abs() > minDragDistanceToValidate
           ? completeSlide()
           : cancelSlide();

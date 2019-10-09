@@ -1,3 +1,7 @@
+## 1.1.1 - 2019-10-09
+
+* Added option to disable auto-slide, allowing the container to stay where it as been dragged when the gesture end, instead of snapping to the start position or to the full extent.
+
 ## 1.1.0 - 2019-09-18
 
 * **Breaking change** Fixed naming issue with new Flutter version (1.9.0 and above). Use this version of the plugin when you upgrade Flutter.

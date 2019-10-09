@@ -1,3 +1,9 @@
+## 1.1.2 - 2019-10-09
+
+* Fixed container hit detection area not moving with content.
+* Updated example to demo the issue above and show a work around.
+* Updated example to add a few more use cases.
+
 ## 1.1.1 - 2019-10-09
 
 * Added option to disable auto-slide, allowing the container to stay where it as been dragged when the gesture end, instead of snapping to the start position or to the full extent.

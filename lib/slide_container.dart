@@ -431,18 +431,12 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) => RawGestureDetector(
-        gestures: gestures,
-        child: Transform.translate(
-          offset: isVerticalSlide
-              ? Offset(
-                  0.0,
-                  containerOffset,
-                )
-              : Offset(
-                  containerOffset,
-                  0.0,
-                ),
+  Widget build(BuildContext context) => Transform.translate(
+        offset: isVerticalSlide
+            ? Offset(0.0, containerOffset)
+            : Offset(containerOffset, 0.0),
+        child: RawGestureDetector(
+          gestures: gestures,
           child: widget.child,
         ),
       );

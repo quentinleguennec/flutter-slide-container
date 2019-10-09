@@ -1,6 +1,6 @@
 name: slide_container_example
 description: Demo of the Slide Container.
-version: 1.0.4
+version: 1.0.5
 author: Quentin Le Guennec <quentin@tengio.com>
 
 environment:
@@ -11,3 +11,7 @@ dependencies:
     sdk: flutter
   slide_container:
     path: ../
+
+
+flutter:
+  uses-material-design: true

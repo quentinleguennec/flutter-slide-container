@@ -38,6 +38,8 @@ build/
 **/ios/Runner/GeneratedPluginRegistrant.*
 **/ios/Podfile.lock
 
+**/ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/
+
 android/Gemfile
 ios/Gemfile
 ios/Runner.app.dSYM.zip

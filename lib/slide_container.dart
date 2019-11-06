@@ -111,6 +111,8 @@ class SlideContainer extends StatefulWidget {
   /// Register this controller to be able to manually force a slide in a given direction.
   final SlideContainerController controller;
 
+  final Rect validStartDragRect;
+
   SlideContainer({
     @required this.child,
     this.slideDirection = SlideContainerDirection.vertical,
@@ -119,6 +121,7 @@ class SlideContainer extends StatefulWidget {
     this.dampeningStrength = 8.0,
     this.minSlideDistanceToValidate,
     this.maxSlideDistance,
+    this.validStartDragRect,
     this.onSlideStarted,
     this.onSlideValidated,
     this.onSlideUnvalidated,
@@ -142,6 +145,7 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
   double dragValue = 0.0;
   double dragTarget = 0.0;
   bool isFirstDragFrame = true;
+  bool isValidDrag = false;
   bool didValidate = false;
   bool didForceSlide = false;
   AnimationController animationController;
@@ -381,6 +385,14 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
       });
 
   void handlePanStart(DragStartDetails details) {
+    if(widget.validStartDragRect != null) {
+      isValidDrag = widget.validStartDragRect.contains(details.localPosition);
+    } else {
+      isValidDrag = true;
+    }
+
+    if(!isValidDrag) return;
+
     didForceSlide = false;
     animationController.stop();
     isFirstDragFrame = true;
@@ -392,6 +404,8 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
   }
 
   void handlePanUpdate(DragUpdateDetails details) {
+    if(!isValidDrag) return;
+
     if (didForceSlide) {
       return;
     }
@@ -412,6 +426,8 @@ class _State extends State<SlideContainer> with TickerProviderStateMixin {
   }
 
   void handlePanEnd(DragEndDetails details) {
+    if(!isValidDrag) return;
+
     if (didForceSlide) {
       return;
     }
